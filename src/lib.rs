@@ -1,44 +1,21 @@
 use proc_macro::TokenStream;
-use quote::quote;
 
-// empty file
+mod enum_from;
+mod enum_from_darling;
+
+use enum_from::process_enum_from;
+use enum_from_darling::process_enum_from_darling;
+
 #[proc_macro_derive(EnumFrom)]
 pub fn derive_enum_from(input: TokenStream) -> TokenStream {
     let input = syn::parse_macro_input!(input as syn::DeriveInput);
-    println!("{:#?}", input);
-    // get ident
-    let ident = input.ident;
-    // get generics
-    let generics = input.generics;
+    // println!("{:#?}", input);
+    process_enum_from(input).into()
+}
 
-    let variants = match input.data {
-        syn::Data::Enum(data) => data.variants,
-        _ => panic!("EnumFrom only works on enums"),
-    };
-    let from_impls = variants.iter().map(|variant| {
-        let var = &variant.ident;
-        match &variant.fields {
-            syn::Fields::Unnamed(fields) => {
-                if fields.unnamed.len() != 1 {
-                    quote! {}
-                } else {
-                    let field = fields.unnamed.first().expect("should have 1 field");
-                    let ty = &field.ty;
-                    quote! {
-                        impl #generics From<#ty> for #ident #generics {
-                            fn from(v: #ty) -> Self {
-                                #ident::#var(v)
-                            }
-                        }
-                    }
-                }
-            }
-            syn::Fields::Unit => quote! {},
-            syn::Fields::Named(_fields) => quote! {},
-        }
-    });
-    quote! {
-        #(#from_impls)*
-    }
-    .into()
+#[proc_macro_derive(EnumFromDarling)]
+pub fn derive_enum_from_darling(input: TokenStream) -> TokenStream {
+    let input = syn::parse_macro_input!(input as syn::DeriveInput);
+    // println!("{:#?}", input);
+    process_enum_from_darling(input).into()
 }
